@@ -1,7 +1,9 @@
 import tweepy
-from dotenv import load_dotenv
 import os
+import json
+from pathlib import Path
 from datetime import datetime
+from dotenv import load_dotenv
 
 load_dotenv()
 
@@ -18,14 +20,24 @@ client = tweepy.Client(
     access_token=ACCESS_TOKEN,
     access_token_secret=SECRET_ACCESS
 )
+FILE = Path("tweets.json")
 
-## def getTweetFromAccout(username):
+def save_tweets(tweets):
+    if FILE.exists():
+        with open(FILE, "r") as f:
+            old = json.load(f)
+    else:
+        old = []
+
+    all_tweets = old + [t for t in tweets if t not in old]
+
+    with open(FILE, "w") as f:
+        json.dump(all_tweets, f, indent=4)
 
 
-def main():
-    # Check rate limit status
+def getTweetFromAccout(username):
     try:
-        response = client.get_user(username = "WorstGenHQ")
+        response = client.get_user(username = username)
         user_id = response.data.id
 
         responseTweet = client.get_users_tweets(id = user_id, max_results = 20)
@@ -44,8 +56,14 @@ def main():
             print(f"Remaining: {e.response.headers.get('x-rate-limit-remaining')}")
             print(f"Reset time: {reset_time.strftime('%I:%M:%S %p')}")
 
-    for tweet in tweets:
-                print(f"Tweet Pulled:{tweet}")
+    return tweets
+
+
+def main():
+    # Check rate limit status
+    tweets = getTweetFromAccout("WorstGenHQ")
+
+    save_tweets(tweets)
 
 if __name__ == "__main__":
     main()
